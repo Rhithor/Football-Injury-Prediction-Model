@@ -1,0 +1,83 @@
+.App {
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: #0a0a0a;
+  position: relative;
+}
+
+.App::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.App-header {
+  text-align: center;
+  color: #ffffff;
+  margin-bottom: 50px;
+  padding: 30px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.App-header h1 {
+  font-size: 3.5rem;
+  margin-bottom: 15px;
+  background: linear-gradient(135deg, #ffffff 0%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.App-header p {
+  font-size: 1.3rem;
+  color: #b0b0b0;
+  font-weight: 300;
+  letter-spacing: 0.5px;
+}
+
+.App-main {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.container {
+  max-width: 900px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+@media (max-width: 768px) {
+  .App-header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .App-header p {
+    font-size: 1.1rem;
+  }
+  
+  .container {
+    max-width: 100%;
+  }
+  
+  .App {
+    padding: 20px 15px;
+  }
+}
+
