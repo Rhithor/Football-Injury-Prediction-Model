@@ -1,60 +1,107 @@
-import { useState } from "react";
-import axios from "axios";
+import { useState } from 'react'
+import { useNavigate, Link } from 'react-router-dom'
+import api from '../axiosConfig'
+import './Auth.css'
 
 const RegisterPage = () => {
-  const [email, setEmail] = useState("");
-  const [password1, setPassword1] = useState("");
-  const [password2, setPassword2] = useState("");
+  const navigate = useNavigate()
+  const [form, setForm] = useState({
+    username: '',
+    email: '',
+    password1: '',
+    password2: '',
+  })
+  const [error, setError] = useState('')
 
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value })
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setError('')
     try {
-      const response = await axios.post(
-        "http://localhost:8000/auth/registration/",
-        { email, password1, password2 },
-        { withCredentials: true }
-      );
-      localStorage.setItem("token", response.data.token);
-      // Optionally, redirect
-      window.location.href = "/dashboard";
+      const { data } = await api.post('/auth/registration/', form)
+      localStorage.setItem('authToken', data.key)
+      navigate('/')
     } catch (err) {
-      alert("Registration failed");
+      const resp = err.response?.data
+      setError(
+        resp?.email?.[0] ||
+        resp?.password1?.[0] ||
+        resp?.non_field_errors?.[0] ||
+        'Registration failed'
+      )
     }
-  };
+  }
 
-  const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:8000/accounts/google/login/";
-  };
+  const handleGoogleSignup = () => {
+    window.location.href = 'http://localhost:8000/accounts/google/login/'
+  }
 
   return (
-    <form onSubmit={handleRegister}>
-      <input
-        value={email}
-        onChange={e => setEmail(e.target.value)}
-        placeholder="Email"
-        type="email"
-        required
-      />
-      <input
-        value={password1}
-        onChange={e => setPassword1(e.target.value)}
-        placeholder="Password"
-        type="password"
-        required
-      />
-      <input
-        value={password2}
-        onChange={e => setPassword2(e.target.value)}
-        placeholder="Confirm Password"
-        type="password"
-        required
-      />
-      <button type="submit">Register</button>
-      <button type="button" onClick={handleGoogleLogin}>
-        Register with Google
-      </button>
-    </form>
-  );
-};
+    <div className="auth-container">
+      <form className="auth-card" onSubmit={handleSubmit} autoComplete="off">
+        <h2>Create account</h2>
+        {error && <p className="auth-error">{error}</p>}
 
-export default RegisterPage;
+        <label htmlFor="username">Username</label>
+        <input
+          id="username"
+          name="username"
+          value={form.username}
+          onChange={handleChange}
+          required
+          autoComplete="off"
+        />
+
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          value={form.email}
+          onChange={handleChange}
+          required
+          autoComplete="email"
+        />
+
+        <label htmlFor="password1">Password</label>
+        <input
+          id="password1"
+          name="password1"
+          type="password"
+          value={form.password1}
+          onChange={handleChange}
+          required
+          autoComplete="new-password"
+        />
+
+        <label htmlFor="password2">Confirm password</label>
+        <input
+          id="password2"
+          name="password2"
+          type="password"
+          value={form.password2}
+          onChange={handleChange}
+          required
+          autoComplete="new-password"
+        />
+
+        <button type="submit">Register</button>
+
+        <div className="auth-divider">or</div>
+
+        <button type="button" className="google-btn" onClick={handleGoogleSignup}>
+          Sign up with Google
+        </button>
+
+        <p>
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+      </form>
+    </div>
+  )
+}
+
+export default RegisterPage

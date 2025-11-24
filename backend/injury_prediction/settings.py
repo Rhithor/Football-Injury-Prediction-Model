@@ -19,6 +19,10 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-change-this-in-produc
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 
 
 # Application definition
@@ -40,6 +44,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'dj_rest_auth',
     'dj_rest_auth.registration',
+    'rest_framework.authtoken',
 ]
 
 SITE_ID = 1
@@ -55,6 +60,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -143,7 +149,7 @@ CORS_ALLOW_CREDENTIALS = True
 
 REST_AUTH = {
     'LOGIN_SERIALIZER': 'dj_rest_auth.serializers.LoginSerializer',
-    'REGISTER_SERIALIZER': 'dj_rest_auth.serializers.RegisterSerializer',
+    'REGISTER_SERIALIZER': 'dj_rest_auth.registration.serializers.RegisterSerializer',
 }
 
 # REST Framework settings
