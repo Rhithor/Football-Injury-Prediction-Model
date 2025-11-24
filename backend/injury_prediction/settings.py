@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 ]
 
-SITE_ID = 1
+SITE_ID = 2
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_REQUIRED = True
@@ -69,7 +69,7 @@ ROOT_URLCONF = 'injury_prediction.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [

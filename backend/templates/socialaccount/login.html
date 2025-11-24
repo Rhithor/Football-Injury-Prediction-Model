@@ -1,0 +1,126 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block head_title %}{% trans "Connecting to Google" %}{% endblock %}</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Inter", "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, rgba(212, 175, 55, 0.12), transparent 45%),
+          #050505;
+        color: #f6f6f6;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: 420px;
+        max-width: 100%;
+        padding: 32px 36px;
+        border-radius: 20px;
+        background: rgba(10, 10, 10, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6);
+        text-align: center;
+      }
+      .spinner {
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 18px;
+        border-radius: 50%;
+        border: 4px solid rgba(255, 255, 255, 0.15);
+        border-top-color: #d4af37;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .card h1 {
+        font-size: 1.6rem;
+        margin-bottom: 10px;
+      }
+      .card p {
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 12px;
+        line-height: 1.5;
+      }
+      .provider {
+        margin-top: 6px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: #d4af37;
+        text-transform: uppercase;
+      }
+      .action-btn {
+        margin-top: 24px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 20px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #d4af37, #b9861a);
+        border: none;
+        color: #050505;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 12px 30px rgba(212, 175, 55, 0.35);
+      }
+      .action-btn svg {
+        width: 18px;
+        height: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="spinner" aria-hidden="true"></div>
+      <h1>{% blocktrans %}Hold tight...{% endblocktrans %}</h1>
+      <p>
+        {% blocktrans %}We are securely redirecting you to Google to complete the sign-in process.{% endblocktrans %}
+      </p>
+      <div class="provider">
+        {% blocktrans %}Provider: {{ provider.name }}{% endblocktrans %}
+      </div>
+      <form method="post" id="provider-form">
+        {% csrf_token %}
+        {% if form %}
+          {% for field in form.hidden_fields %}
+            {{ field }}
+          {% endfor %}
+        {% endif %}
+        <button type="submit" class="action-btn">
+          <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+            <path fill="#4285F4" d="M502 256c0-16-1-32-4-47.5H256v90h138c-6 32-25 59-54 77v64h87c51-47 80-116 80-183.5Z"/>
+            <path fill="#34A853" d="M256 512c70 0 129-23 172-63l-87-64c-24 16-55 26-85 26-65 0-120-44-140-105h-90v66c43 85 128 140 230 140Z"/>
+            <path fill="#FBBC05" d="M116 306c-9-27-9-57 0-84v-66h-90a256 256 0 0 0 0 216l90-66Z"/>
+            <path fill="#EA4335" d="M256 100c35-1 69 11 95 33l71-71C381 20 320-2 256 0 154 0 69 55 26 140l90 66c20-61 75-106 140-106Z"/>
+          </svg>
+          {% trans "Continue to Google" %}
+        </button>
+      </form>
+    </div>
+    <script>
+      // auto-submit the form after a brief delay so the UI flashes in
+      setTimeout(() => {
+        const form = document.getElementById('provider-form')
+        if (form) {
+          form.submit()
+        }
+      }, 700)
+    </script>
+  </body>
+</html>
+

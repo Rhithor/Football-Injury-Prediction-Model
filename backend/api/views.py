@@ -6,6 +6,8 @@ from sklearn.ensemble import RandomForestClassifier
 import joblib
 import os
 from django.conf import settings
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 
 # Placeholder model - replace with your trained model
@@ -117,4 +119,11 @@ def get_recommendations(prediction, data):
         recommendations.append("Insufficient recovery time - risk of injury increased")
     
     return recommendations
+
+
+@api_view(['GET'])
+@ensure_csrf_cookie
+def csrf_token(request):
+    """Return a CSRF token so the frontend can include it in requests."""
+    return Response({'csrfToken': get_token(request)})
 
