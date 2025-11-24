@@ -1,34 +1,10 @@
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-import joblib
-import os
-from django.conf import settings
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-
-# Placeholder model - replace with your trained model
-model = None
-
-
-def load_model():
-    """Load the trained model if it exists, otherwise create a placeholder"""
-    global model
-    model_path = os.path.join(settings.BASE_DIR, 'api', 'models', 'injury_model.pkl')
-    
-    if os.path.exists(model_path):
-        model = joblib.load(model_path)
-    else:
-        # Placeholder model for development
-        # Replace this with your actual trained model
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
-        # Train on dummy data (replace with actual training)
-        X_dummy = np.random.rand(100, 10)
-        y_dummy = np.random.randint(0, 2, 100)
-        model.fit(X_dummy, y_dummy)
+from .models.injury_predictor import injury_predictor
 
 
 @api_view(['GET'])
@@ -42,83 +18,81 @@ def health_check(request):
 
 @api_view(['POST'])
 def predict_injury(request):
-    """
-    Predict injury risk based on player data
-    
-    Expected input format:
-    {
-        "age": 25,
-        "matches_played": 30,
-        "minutes_played": 2500,
-        "previous_injuries": 2,
-        "fatigue_level": 0.6,
-        "training_load": 0.7,
-        "recovery_time": 48,
-        "position": "midfielder",
-        "fitness_score": 0.85,
-        "weather_condition": "normal"
-    }
-    """
-    global model
-    
-    if model is None:
-        load_model()
-    
+    """Predict injury risk using the trained ML model."""
     try:
-        data = request.data
-        
-        # Extract features (adjust based on your model's requirements)
-        features = [
-            data.get('age', 25),
-            data.get('matches_played', 0),
-            data.get('minutes_played', 0),
-            data.get('previous_injuries', 0),
-            data.get('fatigue_level', 0.5),
-            data.get('training_load', 0.5),
-            data.get('recovery_time', 48),
-            data.get('fitness_score', 0.8),
-        ]
-        
-        # Convert to numpy array and reshape for prediction
-        features_array = np.array(features).reshape(1, -1)
-        
-        # Make prediction
-        prediction = model.predict(features_array)[0]
-        probability = model.predict_proba(features_array)[0]
-        
-        # Return response
-        return Response({
-            'injury_risk': 'high' if prediction == 1 else 'low',
-            'risk_probability': float(probability[1]) if len(probability) > 1 else float(probability[0]),
-            'recommendations': get_recommendations(prediction, data)
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        return Response({
-            'error': str(e),
-            'message': 'Error processing prediction request'
-        }, status=status.HTTP_400_BAD_REQUEST)
+        payload = build_player_payload(request.data)
+        prediction = injury_predictor.predict_risk(payload)
+
+        response_data = {
+            'injury_risk': prediction['risk_level'],
+            'risk_probability': round(prediction['risk_score'], 4),
+            'confidence': round(prediction['confidence'], 4),
+            'key_factors': prediction['key_factors'],
+            'recommendations': get_recommendations(prediction, payload),
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    except ValueError as exc:
+        return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    except Exception as exc:
+        return Response(
+            {'error': str(exc), 'message': 'Error processing prediction request'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
-def get_recommendations(prediction, data):
-    """Generate recommendations based on prediction"""
+def get_recommendations(prediction: dict, data: dict) -> list:
+    """Generate recommendations based on prediction and player data."""
+    risk_level = prediction.get('risk_level')
     recommendations = []
-    
-    if prediction == 1:  # High risk
-        recommendations.append("Consider reducing training load")
-        recommendations.append("Ensure adequate recovery time")
-        recommendations.append("Monitor player closely during matches")
-    else:  # Low risk
-        recommendations.append("Player is in good condition")
-        recommendations.append("Maintain current training regimen")
-    
-    if data.get('fatigue_level', 0) > 0.7:
-        recommendations.append("High fatigue detected - consider rest")
-    
-    if data.get('recovery_time', 48) < 24:
-        recommendations.append("Insufficient recovery time - risk of injury increased")
-    
+
+    if risk_level == 'high':
+        recommendations += [
+            "Immediate workload reduction and individualized recovery plan.",
+            "Schedule medical screening before next fixture.",
+            "Limit high-intensity drills for the next 72 hours."
+        ]
+    elif risk_level == 'medium':
+        recommendations += [
+            "Increase focus on recovery protocols (sleep, nutrition).",
+            "Monitor training load and reduce intensity spikes.",
+            "Add additional mobility and stability sessions."
+        ]
+    else:
+        recommendations += [
+            "Maintain current training plan.",
+            "Continue monitoring key wellness metrics.",
+            "Plan progressive overload cautiously."
+        ]
+
+    if data['fatigue_level'] > 0.7:
+        recommendations.append("Fatigue readings are high — schedule active recovery or rest day.")
+    if data['recovery_time'] < 24:
+        recommendations.append("Recovery time under 24h detected — increase rest before next session.")
+    if data['training_load'] > 0.75:
+        recommendations.append("Training load trending high — consider tapering sessions.")
+
     return recommendations
+
+
+def build_player_payload(data: dict) -> dict:
+    """Map incoming request data to the model input schema."""
+    matches_played = max(1, int(data.get('matches_played', 1)))
+    minutes_played = float(data.get('minutes_played', 0))
+
+    payload = {
+        'age': int(data.get('age', 25)),
+        'position': data.get('position', 'midfielder'),
+        'matches_played': matches_played,
+        'total_minutes_played': minutes_played,
+        'fatigue_level': float(data.get('fatigue_level', 0.5)),
+        'training_load': float(data.get('training_load', 0.5)),
+        'recovery_time': float(data.get('recovery_time', 48)),
+        'fitness_score': float(data.get('fitness_score', 0.8)),
+        'previous_injuries_count': int(data.get('previous_injuries', 0)),
+        'weather_condition': data.get('weather_condition', 'normal')
+    }
+    return payload
 
 
 @api_view(['GET'])

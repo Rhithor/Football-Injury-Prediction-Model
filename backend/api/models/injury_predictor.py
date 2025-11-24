@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, classification_report
@@ -21,7 +22,7 @@ class InjuryPredictor:
         self.model = None
         self.feature_names = []
         self.is_trained = False
-        self.model_path = "injury_model.pkl"  # Changed to .pkl
+        self.model_path = Path(__file__).resolve().parent / "injury_model.pkl"
         self.weather_factor = 1.0
         
     def generate_training_data(self, n_samples=1000) -> Tuple[pd.DataFrame, pd.Series]:
