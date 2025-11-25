@@ -39,8 +39,10 @@ const Home = () => {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>⚽ Football Injury Prediction</h1>
-        <p>Predict injury risk for football players using AI</p>
+        <div className="header-content">
+          <h1>⚽ Football Injury Prediction</h1>
+          <p>Predict injury risk for football players using AI</p>
+        </div>
       </header>
 
       <main className="App-main">

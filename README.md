@@ -144,3 +144,72 @@ Make sure the feature order in the backend matches exactly what your model expec
 - The frontend proxies API calls to the backend automatically
 - Make sure both servers are running when testing the full app
 
+Security note about OAuth token delivery
+---------------------------------------
+The app now returns the API token to the frontend after social login using an URL fragment (example: http://localhost:5173/#token=...).
+Fragments are not sent to servers and therefore do not appear in server access logs, which reduces the chance of token leakage.
+
+If you'd rather receive the token with a different mechanism (POST exchange, cookie-based session, or hash-less redirect), I can implement that for a more secure production setup.
+
+Social signup behavior
+----------------------
+The app is configured to automatically provision accounts when users sign in with Google. That means when a user signs in with their Google account and Google provides an email address, the backend will create an account for them and finish the login flow automatically (no manual signup form).
+
+If you'd rather require users to complete a manual signup page first, set `SOCIALACCOUNT_AUTO_SIGNUP = False` in `backend/injury_prediction/settings.py`.
+
+Running the end-to-end test (Playwright)
+---------------------------------------
+We've added a lightweight Playwright-based e2e test that verifies the frontend captures a token fragment after a simulated social login. To run it locally:
+
+1. Install frontend deps and Playwright (from the workspace root or in `frontend`):
+
+```bash
+cd frontend
+npm install
+npx playwright install
+```
+
+2. Start the frontend dev server (dev server must be running during the test):
+
+```bash
+npm run dev
+```
+
+3. Run the tests in a separate terminal:
+
+```bash
+npm run test:e2e
+```
+
+The test doesn't communicate with Google — it intercepts the backend login URL and simulates the redirect back to the SPA with a token (suitable for CI/local verification).
+
+## Troubleshooting: Google OAuth / "Continue with Google" errors
+
+If clicking "Continue with Google" results in a server error like:
+
+- MultipleObjectsReturned at /accounts/google/login/
+- or a Google error about redirect_uri_mismatch
+
+Follow these steps:
+
+1. Duplicate app config (MultipleObjectsReturned)
+   - This happens when allauth finds more than one Google app configuration. There are two ways to configure provider credentials:
+     - The Django admin (SocialApp model)
+     - The `SOCIALACCOUNT_PROVIDERS` `APP` block in `backend/injury_prediction/settings.py`
+   - Make sure you only use one method. The project defaults to keeping credentials in the database (Django Admin). If you put credentials both places, allauth will see two apps and raise MultipleObjectsReturned.
+   - Fix: remove the `APP` key from `SOCIALACCOUNT_PROVIDERS` in `backend/injury_prediction/settings.py` or delete the duplicate SocialApp in the Django admin so only one app exists.
+
+2. redirect_uri_mismatch / Authorization errors from Google
+   - In the Google Cloud Console -> Credentials for your OAuth client make sure the "Authorized redirect URIs" includes:
+     `http://localhost:8000/accounts/google/login/callback/`
+   - Also ensure the client type is "Web application" and the Client ID / Client Secret match the SocialApp record or the settings-based `APP` values.
+
+3. Frontend URL / CORS
+   - The frontend uses `VITE_BACKEND_URL` (falls back to http://localhost:8000). If your backend runs on a different URL/port, set the env var in `frontend/.env`:
+
+```
+VITE_BACKEND_URL=http://localhost:8000
+```
+
+Then restart your frontend dev server so the env changes are picked up.
+

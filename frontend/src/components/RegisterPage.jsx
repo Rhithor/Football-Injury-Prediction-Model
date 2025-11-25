@@ -36,7 +36,8 @@ const RegisterPage = () => {
   }
 
   const handleGoogleSignup = () => {
-    window.location.href = 'http://localhost:8000/accounts/google/login/'
+    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+    window.location.href = `${backend}/accounts/google/login/`
   }
 
   return (
@@ -100,7 +101,7 @@ const RegisterPage = () => {
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </form>
-    </div>
+      </div>
   )
 }
 

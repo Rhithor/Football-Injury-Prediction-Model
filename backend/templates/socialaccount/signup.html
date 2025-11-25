@@ -1,0 +1,56 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>{% trans "Sign Up" %}</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin:0; min-height:100vh; font-family: "Inter", "Segoe UI", sans-serif; background: radial-gradient(circle at top, rgba(212,175,55,0.12), transparent 45%), #050505; color:#f6f6f6; display:flex; align-items:center; justify-content:center; padding:24px }
+      .card { width:480px; max-width:100%; background: rgba(10,10,10,0.92); border-radius:18px; padding:32px; border:1px solid rgba(255,255,255,0.06); box-shadow:0 25px 60px rgba(0,0,0,0.6); }
+      h1 { font-size:1.8rem; margin:0 0 6px; background:linear-gradient(135deg,#fff,#d4af37); -webkit-background-clip:text; -webkit-text-fill-color:transparent }
+      p.lead { color: rgba(255,255,255,0.75); margin:6px 0 20px; }
+      label { display:block; font-size:0.9rem; color:#d4af37; text-transform:uppercase; margin-bottom:6px; letter-spacing:0.6px }
+      input[type=text], input[type=email] { width:100%; padding:12px 14px; border-radius:10px; border:1px solid rgba(255,255,255,0.12); background:rgba(10,10,10,0.75); color:#fff; margin-bottom:12px }
+      .btn { display:inline-flex; align-items:center; padding:12px 16px; border-radius:12px; border:none; cursor:pointer; font-weight:700 }
+      .btn-primary { background:linear-gradient(135deg,#d4af37,#b9861a); color:#0b0b0b }
+      .form-row { margin-bottom:12px }
+      .backlinks { font-size:0.9rem; margin-top:14px; display:flex; gap:12px }
+      a { color:#d4af37; text-decoration:none }
+      .muted { color:rgba(255,255,255,0.7) }
+      @media (max-width:520px){ .card{padding:20px} }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>{% trans "Sign Up" %}</h1>
+      <p class="lead">{% blocktrans %}You are about to use your Google account to log in to {{ site.name|default:"this site" }}. As a final step, please complete the following form:{% endblocktrans %}</p>
+
+      <form method="post" action="" class="signup-form">
+        {% csrf_token %}
+        {% if form %}
+          {% for field in form %}
+            <div class="form-row">
+              <label for="{{ field.id_for_label }}">{{ field.label|default:field.name }}</label>
+              {{ field }}
+              {% if field.help_text %}
+                <div class="muted">{{ field.help_text }}</div>
+              {% endif %}
+              {% for err in field.errors %}
+                <div style="color:#ff6b6b;margin-top:6px">{{ err }}</div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary">{% trans "Sign Up" %}</button>
+      </form>
+
+      <div class="backlinks">
+        <a href="/accounts/login/">{% trans "Sign In" %}</a>
+        <a href="/">{% trans "Back to site" %}</a>
+      </div>
+    </div>
+  </body>
+</html>

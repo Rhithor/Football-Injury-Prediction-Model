@@ -26,7 +26,10 @@ const LoginPage = () => {
   }
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8000/accounts/google/login/'
+    // Prefer a Vite env var so different environments can point to other backends
+    // without changing source. Falls back to localhost:8000 for local dev.
+    const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+    window.location.href = `${backend}/accounts/google/login/`
   }
 
   return (
@@ -69,7 +72,7 @@ const LoginPage = () => {
           New here? <Link to="/register">Create an account</Link>
         </p>
       </form>
-    </div>
+      </div>
   )
 }
 

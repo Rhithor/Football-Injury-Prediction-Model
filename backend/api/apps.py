@@ -5,3 +5,10 @@ class ApiConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'api'
 
+    def ready(self):
+        # Ensure signal handlers are registered when the app starts
+        try:
+            import api.signals  # noqa: F401
+        except Exception:
+            pass
+

@@ -3,6 +3,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.shortcuts import redirect
+from django.conf import settings
+from django.views.decorators.http import require_http_methods
+from rest_framework.authtoken.models import Token
+import logging
 
 from .ml.injury_predictor import injury_predictor
 
@@ -100,4 +105,37 @@ def build_player_payload(data: dict) -> dict:
 def csrf_token(request):
     """Return a CSRF token so the frontend can include it in requests."""
     return Response({'csrfToken': get_token(request)})
+
+
+@require_http_methods(["GET"])
+def social_login_success(request):
+    """Called after allauth / social login redirects on successful login.
+
+    If the user is authenticated, ensure they have an auth token and
+    redirect to the frontend with the token so the SPA can store it and
+    continue as an authenticated user.
+    """
+    logger = logging.getLogger(__name__)
+    frontend = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+
+    # Useful debug output while reproducing the flow
+    session_key = getattr(getattr(request, 'session', None), 'session_key', None)
+    logger.debug('social_login_success called; user=%s authenticated=%s session=%s',
+                 getattr(getattr(request, 'user', None), 'id', None),
+                 getattr(getattr(request, 'user', None), 'is_authenticated', False),
+                 session_key)
+
+    # If not authenticated, the social flow probably requires the user to
+    # complete the `3rdparty` signup form. Protect against accidentally
+    # redirecting the user to the frontend login page at this early step —
+    # instead send them to the social signup page so they can complete the
+    # registration step.
+    if not getattr(getattr(request, 'user', None), 'is_authenticated', False):
+        logger.debug('social_login_success: user not authenticated, redirecting to social signup')
+        return redirect('/accounts/3rdparty/signup/')
+
+    # Authenticated — create or fetch API token and redirect to frontend
+    token, _ = Token.objects.get_or_create(user=request.user)
+    logger.debug('social_login_success: issuing token for user=%s token_id=%s', request.user.id, str(token.key)[:8])
+    return redirect(f"{frontend}/#token={token.key}")
 

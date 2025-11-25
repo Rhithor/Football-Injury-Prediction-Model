@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'injury_prediction.middleware.AuthDebugMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -137,6 +138,14 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# During local development enable debug logging so our auth middleware prints
+# messages to the console. This is intentionally minimal and only applies when
+# DEBUG=True.
+if DEBUG:
+    import logging
+
+    logging.basicConfig(level=logging.DEBUG)
+
 # CORS settings
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -165,17 +174,34 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10
 }
 
+# Prefer using SocialApp configured in the Django admin (database) for
+# OAuth credentials. If you *do* want to configure the provider via
+# settings instead, add the APP config here and remove the SocialApp
+# entry from the admin to avoid duplicates which cause MultipleObjectsReturned
+# errors when allauth finds more than one app for the same provider.
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
-        'APP': {
-            'client_id': config('GOOGLE_CLIENT_ID'),
-            'secret': config('GOOGLE_CLIENT_SECRET'),
-            'key': '',
-        },
+        # DO NOT include an 'APP' key here if you've created a SocialApp
+        # record in the Django admin. Keep scope and auth params in settings
+        # while storing client_id/secret on the SocialApp database object.
         'SCOPE': ['profile', 'email'],
         'AUTH_PARAMS': {'access_type': 'online'},
     }
 }
 
-LOGIN_REDIRECT_URL = 'http://localhost:5173/'
+# Force manual signup for social accounts so users must finish the site's
+# registration form instead of auto-provisioning. This prevents accidental
+# auto-creation and ensures users have a username on the site.
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# Use a debug adapter to log social login events during development
+SOCIALACCOUNT_ADAPTER = 'api.adapters.DebugSocialAccountAdapter'
+
+# After successful login (including social), redirect to an internal success view
+# that issues a token and then redirects the user to the frontend with the token
+LOGIN_REDIRECT_URL = '/accounts/social/success/'
+SOCIALACCOUNT_LOGIN_REDIRECT_URL = '/accounts/social/success/'
 LOGOUT_REDIRECT_URL = 'http://localhost:5173/'
+
+# Frontend base url used when redirecting back after certain auth flows.
+FRONTEND_URL = config('FRONTEND_URL', default='http://localhost:5173')
