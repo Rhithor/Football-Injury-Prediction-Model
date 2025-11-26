@@ -1,4 +1,7 @@
 import logging
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +32,26 @@ class AuthDebugMiddleware:
                     is_auth = bool(getattr(user_obj, 'is_authenticated', False))
                 except Exception:
                     is_auth = False
+
+                # If the user has just completed the social signup process
+                # we will log them out and redirect to the frontend login
+                # page so they must explicitly sign in with their new
+                # password (prevents auto-login after signup).
+                try:
+                    if getattr(request, 'session', None):
+                        flag = request.session.get('just_signed_up', False)
+                        if flag:
+                            # clear the flag and, if user is logged in, log them out
+                            try:
+                                request.session.pop('just_signed_up')
+                            except Exception:
+                                pass
+                            if getattr(request, 'user', None) and getattr(request.user, 'is_authenticated', False):
+                                logout(request)
+                                frontend = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+                                return redirect(f"{frontend}/login")
+                except Exception:
+                    logger.exception('Error handling just_signed_up session flag')
 
                 logger.debug(
                     'AUTH FLOW: %s %s user_authenticated=%s session=%s cookies=%s',

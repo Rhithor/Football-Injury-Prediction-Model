@@ -153,9 +153,9 @@ If you'd rather receive the token with a different mechanism (POST exchange, coo
 
 Social signup behavior
 ----------------------
-The app is configured to automatically provision accounts when users sign in with Google. That means when a user signs in with their Google account and Google provides an email address, the backend will create an account for them and finish the login flow automatically (no manual signup form).
+By default the app requires users who sign in with Google to complete the site's signup form (manual completion). If an account is not yet provisioned for the incoming social login the user will be redirected to a social signup page where they must confirm or fill in any missing fields before the local account is created.
 
-If you'd rather require users to complete a manual signup page first, set `SOCIALACCOUNT_AUTO_SIGNUP = False` in `backend/injury_prediction/settings.py`.
+If you prefer immediate auto-provisioning (skip manual signup) change `SOCIALACCOUNT_AUTO_SIGNUP = True` in `backend/injury_prediction/settings.py`. Be aware this will create local accounts automatically when the provider supplies enough information (email, name).
 
 Running the end-to-end test (Playwright)
 ---------------------------------------
@@ -187,8 +187,6 @@ The test doesn't communicate with Google — it intercepts the backend login URL
 
 If clicking "Continue with Google" results in a server error like:
 
-- MultipleObjectsReturned at /accounts/google/login/
-- or a Google error about redirect_uri_mismatch
 
 Follow these steps:
 
@@ -212,4 +210,14 @@ VITE_BACKEND_URL=http://localhost:8000
 ```
 
 Then restart your frontend dev server so the env changes are picked up.
+
+Authentication prompt behavior
+------------------------------
+If Google is already signed-in in the browser (common), Google normally won't ask the user for a password again —
+it will simply let them choose an account and continue. If you want to force the user to re-enter their Google
+password on every sign-in, configure the provider to include a `prompt` parameter. This project uses the
+`prompt=login` option by default so the user will be asked to re-authenticate.
+
+You can change the behavior in `backend/injury_prediction/settings.py` under `SOCIALACCOUNT_PROVIDERS['google']['AUTH_PARAMS']`.
+Available values include `login` (force re-auth), `select_account` (show account chooser), and `consent` (force consent screen).
 

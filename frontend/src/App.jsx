@@ -6,6 +6,7 @@ import Home from './components/Home'
 import LoginPage from './components/LoginPage'
 import RegisterPage from './components/RegisterPage'
 import api from './axiosConfig'
+import SocialAuthHandler from './components/SocialAuthHandler'
 
 function App() {
   useEffect(() => {
@@ -69,6 +70,8 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/complete" element={<SocialAuthHandler />} />
+        
         <Route
           path="/"
           element={

@@ -8,11 +8,12 @@ test('google login stores token and shows Sign Out', async ({ page, baseURL }) =
   // Intercept the normal backend navigation and respond with a small page that
   // redirects back to the frontend with a token in the fragment. This avoids
   // contacting Google during CI or dev tests.
-  await page.route('http://localhost:8000/accounts/google/login/', async (route) => {
+  // Intercept the provider start URL (accept queries like ?prompt=login)
+  await page.route('http://localhost:8000/accounts/google/login*', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'text/html',
-      body: `<!doctype html><html><head><meta charset="utf-8" /><title>Redirect</title><script>window.location='${baseURL}/#token=PLAYWRIGHT_TEST_TOKEN'</script></head><body>Redirecting</body></html>`
+      body: `<!doctype html><html><head><meta charset="utf-8" /><title>Redirect</title><script>window.location='${baseURL}/auth/complete#token=PLAYWRIGHT_TEST_TOKEN'</script></head><body>Redirecting</body></html>`
     })
   })
 

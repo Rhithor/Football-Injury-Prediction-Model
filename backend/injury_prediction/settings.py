@@ -185,14 +185,25 @@ SOCIALACCOUNT_PROVIDERS = {
         # record in the Django admin. Keep scope and auth params in settings
         # while storing client_id/secret on the SocialApp database object.
         'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+        # Allow configuring the Google OAuth prompt via environment so
+        # different environments can choose different UX (e.g., 'login' to
+        # force password entry, 'select_account' to show chooser, or
+        # 'consent' to force the consent screen).
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+            'prompt': config('GOOGLE_OAUTH_PROMPT', default='login')
+        },
     }
 }
 
 # Force manual signup for social accounts so users must finish the site's
 # registration form instead of auto-provisioning. This prevents accidental
 # auto-creation and ensures users have a username on the site.
-SOCIALACCOUNT_AUTO_SIGNUP = True
+# When True, django-allauth will automatically create a local user account
+# when a social account provides sufficient information (e.g. an email).
+# Set to False to force users to complete the site's signup form (manual)
+# before an account is created.
+SOCIALACCOUNT_AUTO_SIGNUP = False
 
 # Use a debug adapter to log social login events during development
 SOCIALACCOUNT_ADAPTER = 'api.adapters.DebugSocialAccountAdapter'

@@ -29,7 +29,10 @@ const LoginPage = () => {
     // Prefer a Vite env var so different environments can point to other backends
     // without changing source. Falls back to localhost:8000 for local dev.
     const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-    window.location.href = `${backend}/accounts/google/login/`
+    // Allow configuring prompt from environment (Vite) but default to
+    // `login` so the provider will reauthenticate when possible.
+    const prompt = import.meta.env.VITE_GOOGLE_PROMPT || 'login'
+    window.location.href = `${backend}/accounts/google/login/?prompt=${encodeURIComponent(prompt)}`
   }
 
   return (

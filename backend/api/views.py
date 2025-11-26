@@ -137,5 +137,12 @@ def social_login_success(request):
     # Authenticated — create or fetch API token and redirect to frontend
     token, _ = Token.objects.get_or_create(user=request.user)
     logger.debug('social_login_success: issuing token for user=%s token_id=%s', request.user.id, str(token.key)[:8])
-    return redirect(f"{frontend}/#token={token.key}")
+    # Redirect back to a dedicated SPA handler route so the front-end can
+    # capture the token safely before protected routing takes effect.
+    redirect_target = f"{frontend}/auth/complete#token={token.key}"
+    logger.debug('social_login_success: redirecting to %s', redirect_target)
+    return redirect(redirect_target)
+
+
+# NOTE: google_login_proxy removed — preserve original allauth flow
 

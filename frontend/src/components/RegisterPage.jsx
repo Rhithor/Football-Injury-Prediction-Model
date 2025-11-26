@@ -37,7 +37,8 @@ const RegisterPage = () => {
 
   const handleGoogleSignup = () => {
     const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
-    window.location.href = `${backend}/accounts/google/login/`
+    const prompt = import.meta.env.VITE_GOOGLE_PROMPT || 'login'
+    window.location.href = `${backend}/accounts/google/login/?prompt=${encodeURIComponent(prompt)}`
   }
 
   return (
