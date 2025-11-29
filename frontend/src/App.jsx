@@ -13,10 +13,8 @@ function App() {
     api.get('/api/auth/csrf/').catch(() => {})
   }, [])
 
-  // If redirected back after social login, the backend will place the
-  // token in the URL fragment (hash) so it is not sent to server logs.
-  // Read the fragment first then fall back to query params for
-  // backward-compatibility.
+  // On social redirect the token may be in the URL fragment; read it then
+  // fall back to query params.
   useEffect(() => {
     try {
       let token = null
@@ -34,7 +32,7 @@ function App() {
 
       if (token) {
         localStorage.setItem('authToken', token)
-        // clear the token from the fragment or querystring so it isn't left visible
+        // remove token from URL
         try {
           if (window.location.hash) {
             const raw = window.location.hash.replace(/^#/, '')
@@ -56,11 +54,11 @@ function App() {
           // ignore history manipulation errors
         }
 
-        // land on root app page now that token is stored
+        // navigate to root now token stored
         window.location.replace('/')
       }
     } catch (e) {
-      // ignore parsing errors
+      // ignore
     }
   }, [])
 

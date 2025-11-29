@@ -25,7 +25,6 @@ const Header = () => {
     try {
       await api.delete('/api/account/delete/')
     } catch (e) {
-      // if backend returns error, show a simple alert for now
       window.alert('Unable to delete account: ' + (e.response?.data?.detail || e.message))
       return
     }
@@ -42,8 +41,7 @@ const Header = () => {
       try {
         const resp = await api.get('/auth/user/')
         if (mounted && resp && resp.data) {
-          // store the whole user payload — dj-rest-auth typically returns
-          // username, email, first_name, last_name, etc.
+          // store the full user payload returned by the API
           setUser(resp.data)
         }
       } catch (e) {
@@ -74,7 +72,7 @@ const Header = () => {
               <div style={{display:'flex',gap:12,alignItems:'center'}}>
                 {user ? (
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    {/* Avatar: prefer user.avatar or social avatar if provided; otherwise initials */}
+                    {/* avatar or initials */}
                     {user.avatar || user.picture || user.profile_image ? (
                       <img src={user.avatar || user.picture || user.profile_image} alt="avatar" style={{width:36,height:36,borderRadius:10,objectFit:'cover',border:'1px solid rgba(255,255,255,0.06)'}} />
                     ) : (

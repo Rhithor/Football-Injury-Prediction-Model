@@ -6,7 +6,7 @@ test('debug login page', async ({ page, baseURL }) => {
   page.on('pageerror', err => logs.push(`pageerror: ${err.message}`))
 
   await page.goto('/login')
-  // give scripts a moment to run
+  // wait briefly for scripts
   await page.waitForTimeout(500)
 
   const html = await page.content()

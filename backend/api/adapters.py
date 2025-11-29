@@ -12,8 +12,7 @@ class DebugSocialAccountAdapter(DefaultSocialAccountAdapter):
     """
 
     def pre_social_login(self, request, sociallogin):
-        # Called after a successful provider authentication but before the
-        # login is processed. We'll log the sociallogin object and session info
+        # log pre-login state
         try:
             logger.debug('adapter.pre_social_login: request.session=%s user=%s sociallogin=%s',
                          getattr(getattr(request, 'session', None), 'session_key', None),
@@ -24,8 +23,7 @@ class DebugSocialAccountAdapter(DefaultSocialAccountAdapter):
         return super().pre_social_login(request, sociallogin)
 
     def save_user(self, request, sociallogin, form=None):
-        # Called when creating a new user from sociallogin.
-        # Log the sociallogin state before saving.
+        # log save_user state
         try:
             logger.debug('adapter.save_user: session=%s sociallogin.has_account=%s sociallogin.user=%s',
                          getattr(getattr(request, 'session', None), 'session_key', None),
@@ -36,12 +34,7 @@ class DebugSocialAccountAdapter(DefaultSocialAccountAdapter):
         return super().save_user(request, sociallogin, form)
 
     def populate_user(self, request, sociallogin, data):
-        """Populate a new user from the sociallogin's provider data.
-
-        This runs before the social signup form is rendered which lets us
-        provide default values for the user registration form so users do
-        not need to re-type the data the provider already supplied.
-        """
+        """Populate a new user from the provider data before signup."""
         user = super().populate_user(request, sociallogin, data)
 
         extra = getattr(sociallogin.account, 'extra_data', {}) or {}
@@ -51,7 +44,7 @@ class DebugSocialAccountAdapter(DefaultSocialAccountAdapter):
         if email:
             user.email = email
 
-        # Try to extract first_name / last_name from common oauth fields
+        # extract first_name / last_name from common oauth fields
         first = extra.get('given_name') or extra.get('first_name')
         last = extra.get('family_name') or extra.get('last_name')
         name = extra.get('name') or data.get('name')
@@ -74,13 +67,13 @@ class DebugSocialAccountAdapter(DefaultSocialAccountAdapter):
             except Exception:
                 pass
 
-        # If username isn't available, create a reasonable default from email
+        # create a sensible default username if none is present
         if not getattr(user, 'username', None):
             if email:
                 base = email.split('@', 1)[0]
             else:
                 base = (name or 'user').replace(' ', '').lower()
-            # Keep username short enough for common field limits
+            # Keep username short for common field limits
             user.username = base[:30]
 
         logger.debug('adapter.populate_user: populated user %s from extra_data %s', getattr(user, 'email', None), extra)

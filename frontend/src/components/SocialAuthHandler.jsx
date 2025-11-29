@@ -6,7 +6,7 @@ const SocialAuthHandler = () => {
 
   useEffect(() => {
     try {
-      // Prefer fragment (hash), fall back to query params
+      // check fragment then query
       let token = null
       if (window.location.hash) {
         const raw = window.location.hash.replace(/^#/, '')
@@ -21,7 +21,7 @@ const SocialAuthHandler = () => {
       if (token) {
         localStorage.setItem('authToken', token)
       }
-      // remove any tokens from url for cleanliness
+      // remove token from URL
       try {
         const url = window.location.pathname
         window.history.replaceState({}, document.title, url)
@@ -29,7 +29,7 @@ const SocialAuthHandler = () => {
         // ignore
       }
     } catch (e) {
-      // ignore parsing errors
+      // ignore
     }
 
     // Always move to the root after handling token

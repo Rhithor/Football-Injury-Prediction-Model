@@ -7,10 +7,10 @@ logger = logging.getLogger(__name__)
 
 
 class AuthDebugMiddleware:
-    """Middleware to log auth-related requests during development.
+    """Development middleware that logs auth-related /accounts/ requests.
 
-    It logs requests targeting /accounts/ paths with cookies, session key and
-    the current user auth state so it's easier to debug social auth redirects.
+    If a session has 'just_signed_up' the middleware enforces logout and
+    redirects the user to the SPA login to require manual signin.
     """
 
     def __init__(self, get_response):
@@ -33,10 +33,7 @@ class AuthDebugMiddleware:
                 except Exception:
                     is_auth = False
 
-                # If the user has just completed the social signup process
-                # we will log them out and redirect to the frontend login
-                # page so they must explicitly sign in with their new
-                # password (prevents auto-login after signup).
+                # Enforce manual sign-in after a social signup
                 try:
                     if getattr(request, 'session', None):
                         flag = request.session.get('just_signed_up', False)

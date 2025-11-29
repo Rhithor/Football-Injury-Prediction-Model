@@ -1,14 +1,15 @@
 import { test, expect } from '@playwright/test'
 
-// This e2e test simulates clicking "Continue with Google" and intercepts
-// the request to the backend login endpoint so we can emulate the provider
-// redirect back to the frontend with a token fragment (#token=...).
+// Simulate a Google login redirect and SPA token capture
 
 test('google login stores token and shows Sign Out', async ({ page, baseURL }) => {
-  // Intercept the normal backend navigation and respond with a small page that
-  // redirects back to the frontend with a token in the fragment. This avoids
-  // contacting Google during CI or dev tests.
-  // Intercept the provider start URL (accept queries like ?prompt=login)
+  // Ensure visiting the root without a token redirects to the login page
+  await page.evaluate(() => localStorage.removeItem('authToken'))
+  await page.goto('/')
+  await page.waitForURL('http://localhost:5173/login')
+  await expect(page.locator('text=Sign In')).toBeVisible()
+
+  // Intercept provider start URL and redirect to SPA with token fragment
   await page.route('http://localhost:8000/accounts/google/login*', async (route) => {
     await route.fulfill({
       status: 200,
@@ -23,23 +24,15 @@ test('google login stores token and shows Sign Out', async ({ page, baseURL }) =
 
   await page.click('text=Continue with Google')
 
-  // Some environments might block the route-based redirect; as a reliable
-  // fallback simulate the provider redirect explicitly by navigating to the
-  // SPA root with a token fragment. This ensures the application capture
-  // logic is exercised consistently in CI and locally.
+  // Fallback: navigate to SPA root with token fragment
   await page.waitForTimeout(100)
   await page.goto(`${baseURL}/#token=PLAYWRIGHT_TEST_TOKEN`)
 
-  // After the simulated provider redirect the SPA should capture the token
-  // then redirect away from the fragment. Wait until header shows "Sign Out"
-  // which indicates the app's auth state has updated, then check localStorage.
-  // If the SPA did not persist the token within the timeout, fall back to
-  // setting the token directly (keeps the test deterministic across envs).
+  // Ensure SPA captured token and updated UI; fallbacks applied if needed.
   try {
     await page.waitForSelector('text=Sign Out', { timeout: 3000 })
   } catch (err) {
-    // token capture didn't happen in time — attempt to read token from the
-    // URL fragment and set it directly so the SPA shows the logged-in state.
+    // Attempt to read token from fragment as a fallback
     const fragToken = await page.evaluate(() => {
       const raw = (window.location.hash || '').replace(/^#/, '')
       const p = new URLSearchParams(raw)
@@ -50,14 +43,14 @@ test('google login stores token and shows Sign Out', async ({ page, baseURL }) =
       await page.reload()
       await page.waitForSelector('text=Sign Out', { timeout: 3000 })
     } else {
-      // final fallback — directly set a known test token and continue
+      // final fallback — set test token directly
       await page.evaluate(() => localStorage.setItem('authToken', 'PLAYWRIGHT_TEST_TOKEN'))
       await page.reload()
       await page.waitForSelector('text=Sign Out', { timeout: 3000 })
     }
   }
 
-  // Give a short moment for the SPA to persist the token
+  // wait for SPA persistence
   await page.waitForTimeout(100)
   const stored = await page.evaluate(() => localStorage.getItem('authToken'))
   expect(stored).toBe('PLAYWRIGHT_TEST_TOKEN')
@@ -71,18 +64,17 @@ test('google login stores token and shows Sign Out', async ({ page, baseURL }) =
     })
   })
 
-  // reload so the header fetches the user profile and renders avatar + name
+  // reload so header fetches profile
   await page.reload()
   await page.waitForSelector('text=Test User')
   await expect(page.locator('img[alt="avatar"]')).toHaveAttribute('src', 'https://example.test/avatar.jpg')
 
-  // Simulate a delete request succeeding and assert header returns to Sign In
+  // Simulate successful delete and assert header returns to Sign In
   await page.route('http://localhost:8000/api/account/delete/', async (route) => {
     await route.fulfill({ status: 204, body: '' })
   })
 
-  // Click delete account and confirm
-  // We need to ensure the confirm dialog resolves to true; playwright automatically accepts it
+  // Click delete account and confirm (Playwright auto-accepts dialog)
   await page.click('button:has-text("Delete account")')
 
   // After deletion the app should remove token and show Sign In

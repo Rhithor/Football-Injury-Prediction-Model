@@ -26,7 +26,7 @@ const PredictionForm = ({ onSubmit, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault()
     
-    // Convert string values to appropriate types
+    // normalize types
     const submitData = {
       ...formData,
       age: parseInt(formData.age),

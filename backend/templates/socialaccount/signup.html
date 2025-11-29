@@ -31,7 +31,7 @@
         <strong>Important:</strong> This site requires you to pick a local password before your account is created. After you submit the form you will be redirected to the login page so you can sign in with the credentials you chose — you will not be automatically signed in by the social provider.
       </div>
 
-      {# Show a compact preview of the provider-supplied data for clarity #}
+      
       {% if sociallogin and sociallogin.account.extra_data %}
         {% with data=sociallogin.account.extra_data %}
           <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">

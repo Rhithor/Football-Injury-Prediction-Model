@@ -10,9 +10,9 @@ urlpatterns = [
     path('api/', include('api.urls')),
     path('auth/', include('dj_rest_auth.urls')),
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
-    # Endpoint used after social login completes - issues token and redirects to frontend
+    # Post-social-login success handler (issues token, redirects to SPA)
     path('accounts/social/success/', api_views.social_login_success, name='social_login_success'),
-    # Include allauth routes after custom success route so our handler is reachable
+    # Mount allauth routes (keep custom success handler above)
     path('accounts/', include('allauth.urls')),
 ]
 

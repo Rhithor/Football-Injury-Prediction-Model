@@ -111,45 +111,34 @@ def csrf_token(request):
 
 @require_http_methods(["GET"])
 def social_login_success(request):
-    """Called after allauth / social login redirects on successful login.
+    """Handle redirect after a successful social login.
 
-    If the user is authenticated, ensure they have an auth token and
-    redirect to the frontend with the token so the SPA can store it and
-    continue as an authenticated user.
+    Authenticated users will receive an API token via a dedicated SPA
+    handler. Users who just completed the social signup are redirected
+    to the frontend login so they can sign in with their newly created
+    password (enforcing manual signups).
     """
     logger = logging.getLogger(__name__)
     frontend = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
 
-    # Useful debug output while reproducing the flow
+    # debug info
     session_key = getattr(getattr(request, 'session', None), 'session_key', None)
     logger.debug('social_login_success called; user=%s authenticated=%s session=%s',
                  getattr(getattr(request, 'user', None), 'id', None),
                  getattr(getattr(request, 'user', None), 'is_authenticated', False),
                  session_key)
 
-    # If not authenticated, the social flow probably requires the user to
-    # complete the `3rdparty` signup form. Protect against accidentally
-    # redirecting the user to the frontend login page at this early step —
-    # instead send them to the social signup page so they can complete the
-    # registration step.
-    #
-    # IMPORTANT: If the session contains the `just_signed_up` flag it means
-    # that a social signup just completed in this session. In that case we
-    # explicitly prevent issuing an API token or redirecting the SPA to
-    # an authenticated state — instead we log out the user and send them to
-    # the frontend login page so they must explicitly sign in with the
-    # password they just created (this enforces the desired manual signup
-    # flow and stops auto-login race conditions).
+    # Redirect unauthenticated users to the social signup form.
+    # IMPORTANT: users who just completed social signup are redirected
+    # to the SPA login instead of being auto-logged-in.
     if request.session.get('just_signed_up', False):
         try:
-            # Clear the flag and ensure the user is logged out from the
-            # server side before redirecting back to the SPA login page.
+            # Clear flag before redirect
             request.session.pop('just_signed_up')
         except Exception:
             pass
         try:
-            # If user is authenticated, log them out so we don't hand out a
-            # token or redirect the SPA into an authenticated state.
+            # ensure we don't hand out a token for a just-signed-up session
             if getattr(getattr(request, 'user', None), 'is_authenticated', False):
                 from django.contrib.auth import logout
 
@@ -165,17 +154,17 @@ def social_login_success(request):
         logger.debug('social_login_success: user not authenticated, redirecting to social signup')
         return redirect('/accounts/3rdparty/signup/')
 
-    # Authenticated — create or fetch API token and redirect to frontend
+    # Authenticated — issue or fetch API token
     token, _ = Token.objects.get_or_create(user=request.user)
     logger.debug('social_login_success: issuing token for user=%s token_id=%s', request.user.id, str(token.key)[:8])
-    # Redirect back to a dedicated SPA handler route so the front-end can
-    # capture the token safely before protected routing takes effect.
+    # Redirect back to a dedicated SPA handler route so the front-end
+    # can capture the token safely.
     redirect_target = f"{frontend}/auth/complete#token={token.key}"
     logger.debug('social_login_success: redirecting to %s', redirect_target)
     return redirect(redirect_target)
 
 
-# Account management endpoints
+# Account management
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_account(request):
@@ -188,7 +177,7 @@ def delete_account(request):
     try:
         user = request.user
         Token.objects.filter(user=user).delete()
-        # Remove social accounts & related data if any (SocialAccount CASCADE will handle)
+        # social accounts will be removed by cascade
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     except Exception as exc:
@@ -197,5 +186,5 @@ def delete_account(request):
         return Response({'detail': 'Error deleting account'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# NOTE: google_login_proxy removed — preserve original allauth flow
+# NOTE: google_login_proxy removed — keep default allauth flow
 
