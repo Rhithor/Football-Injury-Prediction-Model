@@ -27,6 +27,10 @@
       <h1>{% trans "Sign Up" %}</h1>
       <p class="lead">{% blocktrans %}You are about to use your Google account to log in to {{ site.name|default:"this site" }}. As a final step, please complete the following form:{% endblocktrans %}</p>
 
+      <div style="background:linear-gradient(180deg, rgba(212,175,55,0.06), transparent); padding:12px;border-radius:8px;margin-bottom:12px;color:rgba(255,255,255,0.9)">
+        <strong>Important:</strong> This site requires you to pick a local password before your account is created. After you submit the form you will be redirected to the login page so you can sign in with the credentials you chose — you will not be automatically signed in by the social provider.
+      </div>
+
       {# Show a compact preview of the provider-supplied data for clarity #}
       {% if sociallogin and sociallogin.account.extra_data %}
         {% with data=sociallogin.account.extra_data %}
@@ -60,6 +64,17 @@
               {% endfor %}
             </div>
           {% endfor %}
+        {% else %}
+          {# If the social signup form doesn't expose password fields, render them
+             explicitly so new accounts cannot be created without a local password. #}
+          <div class="form-row">
+            <label for="id_password1">Password</label>
+            <input type="password" name="password1" id="id_password1" required />
+          </div>
+          <div class="form-row">
+            <label for="id_password2">Confirm password</label>
+            <input type="password" name="password2" id="id_password2" required />
+          </div>
         {% endif %}
 
         <button type="submit" class="btn btn-primary">{% trans "Sign Up" %}</button>

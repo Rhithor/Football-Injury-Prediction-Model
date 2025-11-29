@@ -61,4 +61,32 @@ test('google login stores token and shows Sign Out', async ({ page, baseURL }) =
   await page.waitForTimeout(100)
   const stored = await page.evaluate(() => localStorage.getItem('authToken'))
   expect(stored).toBe('PLAYWRIGHT_TEST_TOKEN')
+
+  // Intercept the backend user-details call so the SPA sees a full profile
+  await page.route('http://localhost:8000/auth/user/', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ username: 'testuser', email: 'test@example.test', first_name: 'Test', last_name: 'User', picture: 'https://example.test/avatar.jpg' })
+    })
+  })
+
+  // reload so the header fetches the user profile and renders avatar + name
+  await page.reload()
+  await page.waitForSelector('text=Test User')
+  await expect(page.locator('img[alt="avatar"]')).toHaveAttribute('src', 'https://example.test/avatar.jpg')
+
+  // Simulate a delete request succeeding and assert header returns to Sign In
+  await page.route('http://localhost:8000/api/account/delete/', async (route) => {
+    await route.fulfill({ status: 204, body: '' })
+  })
+
+  // Click delete account and confirm
+  // We need to ensure the confirm dialog resolves to true; playwright automatically accepts it
+  await page.click('button:has-text("Delete account")')
+
+  // After deletion the app should remove token and show Sign In
+  await page.waitForSelector('text=Sign In', { timeout: 3000 })
+  const finalToken = await page.evaluate(() => localStorage.getItem('authToken'))
+  expect(finalToken).toBe(null)
 })

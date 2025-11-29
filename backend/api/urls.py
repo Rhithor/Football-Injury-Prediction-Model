@@ -5,5 +5,6 @@ urlpatterns = [
     path('predict/', views.predict_injury, name='predict_injury'),
     path('health/', views.health_check, name='health_check'),
     path('auth/csrf/', views.csrf_token, name='csrf_token'),
+    path('account/delete/', views.delete_account, name='delete_account'),
 ]
 
