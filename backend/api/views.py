@@ -6,6 +6,7 @@ from rest_framework.decorators import permission_classes
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.shortcuts import redirect
+from django.http import HttpResponse
 from django.conf import settings
 from django.views.decorators.http import require_http_methods
 from rest_framework.authtoken.models import Token
@@ -187,4 +188,35 @@ def delete_account(request):
 
 
 # NOTE: google_login_proxy removed — keep default allauth flow
+
+
+def provider_google_login(request):
+    """Proxy to the allauth google provider login view when available.
+
+    If the google provider is not configured this returns a helpful HTML
+    page explaining the issue instead of a JSON 'Not Found'.
+    """
+    try:
+        from allauth.socialaccount.providers.google.views import oauth2_login
+        return oauth2_login(request)
+    except Exception:
+        html = """
+        <html><body>
+        <h1>Google sign-in not configured</h1>
+        <p>The Google social provider is not configured on this server. Please
+        add a SocialApp in the Django admin (provider: 'google') and ensure it
+        is bound to your site object.</p>
+        <p>Alternatively, use the site's regular Sign In flow.</p>
+        </body></html>
+        """
+        return HttpResponse(html, status=200)
+
+
+def provider_google_callback(request):
+    """Delegate to allauth's google callback handler or show message if missing."""
+    try:
+        from allauth.socialaccount.providers.google.views import oauth2_callback
+        return oauth2_callback(request)
+    except Exception:
+        return HttpResponse('<p>Callback not available. Check provider configuration.</p>', status=200)
 

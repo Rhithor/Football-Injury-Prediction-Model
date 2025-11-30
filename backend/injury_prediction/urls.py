@@ -12,6 +12,10 @@ urlpatterns = [
     path('auth/registration/', include('dj_rest_auth.registration.urls')),
     # Post-social-login success handler (issues token, redirects to SPA)
     path('accounts/social/success/', api_views.social_login_success, name='social_login_success'),
+    # Provide explicit proxies for the Google provider so we can show a
+    # helpful message if the provider isn't configured in the DB.
+    path('accounts/google/login/', api_views.provider_google_login, name='provider_google_login'),
+    path('accounts/google/login/callback/', api_views.provider_google_callback, name='provider_google_callback'),
     # Mount allauth routes (keep custom success handler above)
     path('accounts/', include('allauth.urls')),
 ]
